@@ -1,3 +1,7 @@
+## 0.6.1
+* change to apply only multiple selection
+* add grid view with same date view
+
 ## 0.5.10
 * solve `Type 'DecoderCallback' not found.` issue
 
