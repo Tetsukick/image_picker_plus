@@ -203,54 +203,56 @@ class CustomImagePickerState extends State<CustomImagePicker>
         length: 2, child: Material(color: whiteColor, child: safeArea()));
   }
 
-  SafeArea safeArea() {
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: ValueListenableBuilder(
-              valueListenable: pageController,
-              builder: (context, PageController pageControllerValue, child) =>
-                  PageView(
-                controller: pageControllerValue,
-                dragStartBehavior: DragStartBehavior.start,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  if (noGallery) imagesViewPage(),
-                  if (enableCamera || enableVideo) cameraPage(),
-                ],
+  Widget safeArea() {
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: ValueListenableBuilder(
+                valueListenable: pageController,
+                builder: (context, PageController pageControllerValue, child) =>
+                    PageView(
+                  controller: pageControllerValue,
+                  dragStartBehavior: DragStartBehavior.start,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    if (noGallery) imagesViewPage(),
+                    if (enableCamera || enableVideo) cameraPage(),
+                  ],
+                ),
               ),
             ),
-          ),
-          if (multiSelectedImage.value.length < maximumSelection) ...[
-            ValueListenableBuilder(
-              valueListenable: multiSelectionMode,
-              builder: (context, bool multiSelectionModeValue, child) {
-                if (enableVideo || enableCamera) {
-                  if (!showImagePreview) {
-                    if (multiSelectionModeValue) {
-                      return clearSelectedImages();
+            if (multiSelectedImage.value.length < maximumSelection) ...[
+              ValueListenableBuilder(
+                valueListenable: multiSelectionMode,
+                builder: (context, bool multiSelectionModeValue, child) {
+                  if (enableVideo || enableCamera) {
+                    if (!showImagePreview) {
+                      if (multiSelectionModeValue) {
+                        return clearSelectedImages();
+                      } else {
+                        return buildTabBar();
+                      }
                     } else {
-                      return buildTabBar();
+                      return Visibility(
+                        visible: !multiSelectionModeValue,
+                        child: buildTabBar(),
+                      );
                     }
                   } else {
-                    return Visibility(
-                      visible: !multiSelectionModeValue,
-                      child: buildTabBar(),
-                    );
+                    return multiSelectionModeValue
+                        ? clearSelectedImages()
+                        : const SizedBox();
                   }
-                } else {
-                  return multiSelectionModeValue
-                      ? clearSelectedImages()
-                      : const SizedBox();
-                }
-              },
-            )
-          ] else ...[
-            tapBarMessage(false)
+                },
+              )
+            ] else ...[
+              tapBarMessage(false)
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
