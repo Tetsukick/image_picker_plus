@@ -9,7 +9,6 @@ import 'package:image_picker_plus/src/multi_selection_mode.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker_plus/src/utilities/datetime_extention.dart';
-import 'package:native_exif/native_exif.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -32,8 +31,9 @@ class ImagesViewPage extends StatefulWidget {
   final Color blackColor;
   final bool showImagePreview;
   final SliverGridDelegateWithFixedCrossAxisCount gridDelegate;
+
   const ImagesViewPage({
-    Key? key,
+    super.key,
     required this.multiSelectedImages,
     required this.multiSelectionMode,
     required this.clearMultiImages,
@@ -50,7 +50,7 @@ class ImagesViewPage extends StatefulWidget {
     required this.gridDelegate,
     required this.maximumSelection,
     this.callbackFunction,
-  }) : super(key: key);
+  });
 
   @override
   State<ImagesViewPage> createState() => _ImagesViewPageState();
@@ -62,8 +62,10 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       ValueNotifier([]);
 
   ValueNotifier<List<File?>> allImages = ValueNotifier([]);
-  ValueNotifier<Map<String, List<(int, FutureBuilder<Uint8List?>)>>> 
-    mediaListByDate = ValueNotifier({});
+
+  ValueNotifier<Map<String, List<(int, FutureBuilder<Uint8List?>)>>>
+      mediaListByDate = ValueNotifier({});
+
   final ValueNotifier<List<double?>> scaleOfCropsKeys = ValueNotifier([]);
   final ValueNotifier<List<Rect?>> areaOfCropsKeys = ValueNotifier([]);
 
@@ -80,6 +82,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   final isImagesReady = ValueNotifier(false);
   final currentPage = ValueNotifier(0);
   final lastPage = ValueNotifier(0);
+  final dataIndex = ValueNotifier(0);
 
   /// To avoid lag when you interacting with image when it expanded
   final enableVerticalTapping = ValueNotifier(false);
@@ -114,6 +117,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   }
 
   late Widget forBack;
+
   @override
   void initState() {
     _fetchNewMedia(currentPageValue: 0);
@@ -151,28 +155,23 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           await albums[0].getAssetListPaged(page: currentPageValue, size: 60);
       List<FutureBuilder<Uint8List?>> temp = [];
       List<File?> imageTemp = [];
-      Map<String, List<(int, FutureBuilder<Uint8List?>)>> mediaListByDateTemp = {};
 
       for (int i = 0; i < media.length; i++) {
         FutureBuilder<Uint8List?> gridViewImage =
             await getImageGallery(media, i);
         File? image = await highQualityImage(media, i);
-        final exif = await Exif.fromPath(image!.path);
-        final exifDate = (await exif.getOriginalDate()) ?? DateTime.now();
-        mediaListByDateTemp.update(
+        DateTime exifDate = media[i].createDateTime;
+        mediaListByDate.value.update(
           exifDate.toYyyyMMdd,
-          (value) => [...value, (i, gridViewImage)],
-          ifAbsent: () => [(i, gridViewImage)],
+          (value) => [...value, (dataIndex.value, gridViewImage)],
+          ifAbsent: () => [(dataIndex.value, gridViewImage)],
         );
         temp.add(gridViewImage);
         imageTemp.add(image);
+        dataIndex.value++;
       }
       _mediaList.value.addAll(temp);
       allImages.value.addAll(imageTemp);
-      mediaListByDate.value.addAll(mediaListByDateTemp);
-      selectedImage.value = allImages.value[0];
-      widget.multiSelectedImages.value = allImages.value.isEmpty
-        ? [] : [allImages.value[0]!];
       currentPage.value++;
       isImagesReady.value = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
@@ -249,31 +248,39 @@ class _ImagesViewPageState extends State<ImagesViewPage>
             builder: (context, List<FutureBuilder<Uint8List?>> mediaListValue,
                 child) {
               return ValueListenableBuilder(
-                valueListenable: lastPage,
-                builder: (context, int lastPageValue, child) =>
-                    ValueListenableBuilder(
-                  valueListenable: currentPage,
-                  builder: (context, int currentPageValue, child) {
-                    if (!widget.showImagePreview) {
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          normalAppBar(),
-                          Flexible(
-                              child: widget.byDate ?
-                              gridViewWithDate(mediaListValue,
-                                currentPageValue, lastPageValue)
-                              : normalGridView(mediaListValue,
-                                  currentPageValue, lastPageValue),
-                          )
-                        ],
-                      );
-                    } else {
-                      return instagramGridView(
-                          mediaListValue, currentPageValue, lastPageValue);
-                    }
-                  },
-                ),
+                valueListenable: mediaListByDate,
+                builder: (context,
+                    Map<String, List<(int, FutureBuilder<Uint8List?>)>>
+                        mediaListByDateValue,
+                    child) {
+                  return ValueListenableBuilder(
+                    valueListenable: lastPage,
+                    builder: (context, int lastPageValue, child) =>
+                        ValueListenableBuilder(
+                      valueListenable: currentPage,
+                      builder: (context, int currentPageValue, child) {
+                        if (!widget.showImagePreview) {
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              normalAppBar(),
+                              Flexible(
+                                child: widget.byDate
+                                    ? gridViewWithDate(mediaListByDateValue,
+                                        currentPageValue, lastPageValue)
+                                    : normalGridView(mediaListValue,
+                                        currentPageValue, lastPageValue),
+                              )
+                            ],
+                          );
+                        } else {
+                          return instagramGridView(
+                              mediaListValue, currentPageValue, lastPageValue);
+                        }
+                      },
+                    ),
+                  );
+                },
               );
             },
           );
@@ -476,41 +483,40 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     );
   }
 
-  Widget gridViewWithDate(List<FutureBuilder<Uint8List?>> mediaListValue,
-      int currentPageValue, int lastPageValue) {
-
+  Widget gridViewWithDate(
+      Map<String, List<(int, FutureBuilder<Uint8List?>)>> mediaListByDateValue,
+      int currentPageValue,
+      int lastPageValue) {
     return NotificationListener(
-      onNotification: (ScrollNotification notification) {
-        _handleScrollEvent(notification,
-            currentPageValue: currentPageValue, lastPageValue: lastPageValue);
-        return true;
-      },
-      child: ValueListenableBuilder(
-        valueListenable: mediaListByDate,
-        builder: (context, Map<String, List<(int, FutureBuilder<Uint8List?>)>> mediaListByDateValue, child) {
-          return SingleChildScrollView(
-            child: Column(
-              children: mediaListByDateValue.entries.map((e) => gridViewByDate(e.key, e.value)).toList(),
-            ),
-          );  
-        }
-      )
-    );
+        onNotification: (ScrollNotification notification) {
+          _handleScrollEvent(notification,
+              currentPageValue: currentPageValue, lastPageValue: lastPageValue);
+          return true;
+        },
+        child: SingleChildScrollView(
+          child: Column(
+            children: mediaListByDateValue.entries
+                .map((e) => gridViewByDate(e.key, e.value))
+                .toList(),
+          ),
+        ));
   }
 
-  Widget gridViewByDate(String dateLabel, List<(int, FutureBuilder<Uint8List?>)> mediaList) {
+  Widget gridViewByDate(
+      String dateLabel, List<(int, FutureBuilder<Uint8List?>)> mediaList) {
     return Column(
       children: [
         dateSectionHeader(dateLabel, mediaList),
         Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: widget.gridDelegate.crossAxisSpacing),
+              horizontal: widget.gridDelegate.crossAxisSpacing),
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: widget.gridDelegate,
             itemBuilder: (context, index) {
-              return buildImage(mediaList.map((e) => e.$2).toList(), mediaList[index].$1);
+              return buildImage(
+                  mediaList.map((e) => e.$2).toList(), mediaList[index].$1);
             },
             itemCount: mediaList.length,
           ),
@@ -519,71 +525,78 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     );
   }
 
-  Widget dateSectionHeader(String date, List<(int, FutureBuilder<Uint8List?>)> mediaList) {
-    final allImagesInDate = mediaList.map((e) => (allImages.value[e.$1], e.$1)).toList();
-    onTapDateHeader({
-      required List<(File?, int)> allImagesInDate,
-      required List<File> selectedImagesValue,
-      required bool forceRemove,
-      required bool forceAdd,
-      required bool isReady}) {
-      if (!isReady) return;
-      for (var image in allImagesInDate) {
-        if (image.$1 != null) {
-          selectionImageCheck(image.$1!, selectedImagesValue, image.$2, forceRemove: forceRemove, forceAdd: forceAdd);
-        }
-      }
-    }
-
+  Widget dateSectionHeader(
+      String date, List<(int, FutureBuilder<Uint8List?>)> mediaList) {
     return ValueListenableBuilder(
-      valueListenable: isImagesReady,
-      builder: (context, bool isImagesReadyValue, child) {
-        return ValueListenableBuilder(
-            valueListenable: widget.multiSelectedImages,
-            builder: (context, List<File> selectedImagesValue, child) {
-              bool imageSelected = allImagesInDate.every((element) => selectedImagesValue.contains(element.$1));
-              return SizedBox(
-                height: 48,
-                width: double.infinity,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(left: 16),
-                      child: Text(DateTime.parse(date).toMMMdy),
-                    ),
-                    InkWell(
-                      onTap: () => onTapDateHeader(
-                        allImagesInDate: allImagesInDate,
-                        selectedImagesValue: selectedImagesValue,
-                        forceRemove: imageSelected,
-                        forceAdd: !imageSelected,
-                        isReady: isImagesReadyValue),
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 16),
-                        child: Container(
-                          height: 25,
-                          width: 25,
-                          decoration: BoxDecoration(
-                            color: imageSelected
-                                ? Colors.blue
-                                : const Color.fromARGB(115, 222, 222, 222),
-                            border: Border.all(
-                              color: Colors.white,
+        valueListenable: allImages,
+        builder: (context, List<File?> allImagesValue, child) {
+          final allImagesInDate =
+              mediaList.map((e) => (allImages.value[e.$1], e.$1)).toList();
+          onTapDateHeader({
+            required List<(File?, int)> allImagesInDate,
+            required List<File> selectedImagesValue,
+            required bool forceRemove,
+            required bool forceAdd,
+          }) {
+            for (var image in allImagesInDate) {
+              if (image.$1 != null) {
+                selectionImageCheck(image.$1!, selectedImagesValue, image.$2,
+                    forceRemove: forceRemove, forceAdd: forceAdd);
+              }
+            }
+          }
+
+          return ValueListenableBuilder(
+              valueListenable: isImagesReady,
+              builder: (context, bool isImagesReadyValue, child) {
+                return ValueListenableBuilder(
+                    valueListenable: widget.multiSelectedImages,
+                    builder: (context, List<File> selectedImagesValue, child) {
+                      bool imageSelected = allImagesInDate.every((element) =>
+                          selectedImagesValue.contains(element.$1));
+                      return SizedBox(
+                        height: 48,
+                        width: double.infinity,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 16),
+                              child: Text(DateTime.parse(date).toMMMdy),
                             ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Container(),
+                            InkWell(
+                              onTap: () => onTapDateHeader(
+                                allImagesInDate: allImagesInDate,
+                                selectedImagesValue: selectedImagesValue,
+                                forceRemove: imageSelected,
+                                forceAdd: !imageSelected,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 16),
+                                child: Container(
+                                  height: 25,
+                                  width: 25,
+                                  decoration: BoxDecoration(
+                                    color: imageSelected
+                                        ? Colors.blue
+                                        : const Color.fromARGB(
+                                            115, 222, 222, 222),
+                                    border: Border.all(
+                                      color: Colors.white,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Container(),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            });
+                      );
+                    });
+              });
         });
   }
-
 
   ValueListenableBuilder<File?> buildImage(
       List<FutureBuilder<Uint8List?>> mediaListValue, int index) {
@@ -675,8 +688,11 @@ class _ImagesViewPageState extends State<ImagesViewPage>
 
   bool selectionImageCheck(
       File image, List<File> multiSelectionValue, int index,
-      {bool enableCopy = false, bool forceAdd = false, bool forceRemove = false}) {
-    if (multiSelectionValue.contains(image) && ((selectedImage.value == image && !forceAdd) || forceRemove) ) {
+      {bool enableCopy = false,
+      bool forceAdd = false,
+      bool forceRemove = false}) {
+    if (multiSelectionValue.contains(image) &&
+        ((selectedImage.value == image && !forceAdd) || forceRemove)) {
       setState(() {
         if (forceRemove) {
           selectedImage.value = null;
