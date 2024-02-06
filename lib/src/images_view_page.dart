@@ -495,8 +495,10 @@ class _ImagesViewPageState extends State<ImagesViewPage>
             currentPageValue: currentPageValue, lastPageValue: lastPageValue);
         return true;
       },
-      child: Column(
-        children: mediaListByDate.entries.map((e) => gridViewByDate(e.key, e.value)).toList(),
+      child: SingleChildScrollView(
+        child: Column(
+          children: mediaListByDate.entries.map((e) => gridViewByDate(e.key, e.value)).toList(),
+        ),
       ),
     );
   }
