@@ -44,11 +44,11 @@ SPEC CHECKSUMS:
   camera_avfoundation: 8b8d780bcfb6a4a02b0fbe2b4bd17b5b71946e68
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   image_picker_ios: 99dfe1854b4fa34d0364e74a78448a0151025425
-  image_picker_plus: d6f624a0469f05c3165453db97a5cf961a152be4
+  image_picker_plus: 4db202ba8188020d5eb9d333c404ed98e221093a
   native_exif: 837ad189661d7b353660ae7f19f9f6932418f195
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   video_player_avfoundation: e9e6f9cae7d7a6d9b43519b0aab382bca60fcfd1
 
 PODFILE CHECKSUM: 7be2f5f74864d463a8ad433546ed1de7e0f29aef
 
-COCOAPODS: 1.11.2
+COCOAPODS: 1.15.0
