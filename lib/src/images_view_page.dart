@@ -62,6 +62,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       ValueNotifier([]);
 
   ValueNotifier<List<File?>> allImages = ValueNotifier([]);
+  ValueNotifier<Map<String, List<(int, FutureBuilder<Uint8List?>)>>> 
+    mediaListByDate = ValueNotifier({});
   final ValueNotifier<List<double?>> scaleOfCropsKeys = ValueNotifier([]);
   final ValueNotifier<List<Rect?>> areaOfCropsKeys = ValueNotifier([]);
 
@@ -93,6 +95,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   @override
   void dispose() {
     _mediaList.dispose();
+    mediaListByDate.dispose();
     allImages.dispose();
     scrollController.dispose();
     isImagesReady.dispose();
@@ -148,16 +151,25 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           await albums[0].getAssetListPaged(page: currentPageValue, size: 60);
       List<FutureBuilder<Uint8List?>> temp = [];
       List<File?> imageTemp = [];
+      Map<String, List<(int, FutureBuilder<Uint8List?>)>> mediaListByDateTemp = {};
 
       for (int i = 0; i < media.length; i++) {
         FutureBuilder<Uint8List?> gridViewImage =
             await getImageGallery(media, i);
         File? image = await highQualityImage(media, i);
+        final exif = await Exif.fromPath(image!.path);
+        final exifDate = (await exif.getOriginalDate()) ?? DateTime.now();
+        mediaListByDateTemp.update(
+          exifDate.toYyyyMMdd,
+          (value) => [...value, (i, gridViewImage)],
+          ifAbsent: () => [(i, gridViewImage)],
+        );
         temp.add(gridViewImage);
         imageTemp.add(image);
       }
       _mediaList.value.addAll(temp);
       allImages.value.addAll(imageTemp);
+      mediaListByDate.value.addAll(mediaListByDateTemp);
       selectedImage.value = allImages.value[0];
       widget.multiSelectedImages.value = allImages.value.isEmpty
         ? [] : [allImages.value[0]!];
@@ -249,17 +261,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                           normalAppBar(),
                           Flexible(
                               child: widget.byDate ?
-                              FutureBuilder<Widget?>(
-                                future: gridViewWithDate(mediaListValue,
-                                  currentPageValue, lastPageValue),
-                                builder: (context, snapshot) {
-                                  if (snapshot.hasData) {
-                                    return snapshot.data!;
-                                  } else {
-                                    return loadingWidget();
-                                  }
-                                },
-                              )
+                              gridViewWithDate(mediaListValue,
+                                currentPageValue, lastPageValue)
                               : normalGridView(mediaListValue,
                                   currentPageValue, lastPageValue),
                           )
@@ -473,21 +476,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     );
   }
 
-  Future<Widget> gridViewWithDate(List<FutureBuilder<Uint8List?>> mediaListValue,
-      int currentPageValue, int lastPageValue) async {
-
-    Map<String, List<(int, FutureBuilder<Uint8List?>)>> mediaListByDate = {};
-    for (var i = 0; i < allImages.value.length; i++) {
-      if (allImages.value[i] != null) {
-        final exif = await Exif.fromPath(allImages.value[i]!.path);
-        final exifDate = (await exif.getOriginalDate()) ?? DateTime.now();
-        mediaListByDate.update(
-          exifDate.toYyyyMMdd,
-          (value) => [...value, (i, mediaListValue[i])],
-          ifAbsent: () => [(i, mediaListValue[i])],
-        );
-      }
-    }
+  Widget gridViewWithDate(List<FutureBuilder<Uint8List?>> mediaListValue,
+      int currentPageValue, int lastPageValue) {
 
     return NotificationListener(
       onNotification: (ScrollNotification notification) {
@@ -495,11 +485,16 @@ class _ImagesViewPageState extends State<ImagesViewPage>
             currentPageValue: currentPageValue, lastPageValue: lastPageValue);
         return true;
       },
-      child: SingleChildScrollView(
-        child: Column(
-          children: mediaListByDate.entries.map((e) => gridViewByDate(e.key, e.value)).toList(),
-        ),
-      ),
+      child: ValueListenableBuilder(
+        valueListenable: mediaListByDate,
+        builder: (context, Map<String, List<(int, FutureBuilder<Uint8List?>)>> mediaListByDateValue, child) {
+          return SingleChildScrollView(
+            child: Column(
+              children: mediaListByDateValue.entries.map((e) => gridViewByDate(e.key, e.value)).toList(),
+            ),
+          );  
+        }
+      )
     );
   }
 
