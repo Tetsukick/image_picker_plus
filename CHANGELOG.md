@@ -1,3 +1,7 @@
+## 0.6.2
+* fix ios loading image error issue
+* add loading snack bar
+
 ## 0.6.1
 * change to apply only multiple selection
 * add grid view with same date view
