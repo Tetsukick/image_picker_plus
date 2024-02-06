@@ -83,6 +83,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   final currentPage = ValueNotifier(0);
   final lastPage = ValueNotifier(0);
   final dataIndex = ValueNotifier(0);
+  final isFetchLoading = ValueNotifier(false);
 
   /// To avoid lag when you interacting with image when it expanded
   final enableVerticalTapping = ValueNotifier(false);
@@ -113,6 +114,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     scaleOfCropsKeys.dispose();
     areaOfCropsKeys.dispose();
     indexOfSelectedImages.dispose();
+    isFetchLoading.dispose();
     super.dispose();
   }
 
@@ -135,6 +137,28 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   }
 
   _fetchNewMedia({required int currentPageValue}) async {
+    if (isImagesReady.value) {
+      if (isFetchLoading.value) {
+        return;
+      }
+      isFetchLoading.value = true;
+      const snackBar = SnackBar(
+        duration: Duration(seconds: 15),
+        content: Padding(
+          padding: EdgeInsets.all(8.0),
+          child: Center(
+            child: Row(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 16,),
+                Text('loading...'),
+              ],
+            ),
+          ),
+        ),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    }  
     lastPage.value = currentPageValue;
     PermissionState result = await PhotoManager.requestPermissionExtend();
     if (result.isAuth) {
@@ -174,6 +198,10 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       allImages.value.addAll(imageTemp);
       currentPage.value++;
       isImagesReady.value = true;
+      isFetchLoading.value = false;
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
     } else {
       await PhotoManager.requestPermissionExtend();
