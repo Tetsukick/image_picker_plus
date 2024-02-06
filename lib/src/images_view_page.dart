@@ -512,6 +512,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
             horizontal: widget.gridDelegate.crossAxisSpacing),
           child: GridView.builder(
             shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             gridDelegate: widget.gridDelegate,
             itemBuilder: (context, index) {
               return buildImage(mediaList.map((e) => e.$2).toList(), mediaList[index].$1);
