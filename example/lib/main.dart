@@ -74,7 +74,10 @@ class _MyHomePageState extends State<MyHomePage> {
         ImagePickerPlus picker = ImagePickerPlus(context);
 
         SelectedImagesDetails? details =
-        await picker.pickBoth(source: ImageSource.both, byDate: true);
+        await picker.pickBoth(
+            source: ImageSource.both,
+            multiSelection: true,
+            byDate: true);
         if (details != null) await displayDetails(details);
       },
       child: const Text("Normal 1 with date"),
