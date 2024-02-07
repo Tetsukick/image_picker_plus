@@ -405,8 +405,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       valueListenable: indexOfSelectedImages,
       builder: (context, List<int> indexOfSelectedImagesValue, child) =>
           IconButton(
-        icon: const Icon(Icons.arrow_forward_rounded,
-            color: Colors.blue, size: 30),
+        icon: Icon(Icons.arrow_forward_rounded,
+            color: widget.appTheme.accentColor, size: 30),
         onPressed: () async {
           double aspect = expandImage.value ? 6 / 8 : 1.0;
           if (widget.multiSelectionMode.value && widget.multiSelection) {
@@ -582,7 +582,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                     builder: (context, List<File> selectedImagesValue, child) {
                       bool imageSelected = allImagesInDate.every((element) =>
                           selectedImagesValue.contains(element.$1));
-                      return SizedBox(
+                      return Container(
+                        color: widget.appTheme.backgroundColor,
                         height: 48,
                         width: double.infinity,
                         child: Row(
@@ -606,7 +607,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                                   width: 25,
                                   decoration: BoxDecoration(
                                     color: imageSelected
-                                        ? Colors.blue
+                                        ? widget.appTheme.accentColor
                                         : const Color.fromARGB(
                                             115, 222, 222, 222),
                                     border: Border.all(
@@ -614,7 +615,9 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                                     ),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Container(),
+                                  child: imageSelected ?
+                                    const Icon(Icons.check, size: 18, color: Colors.white,)
+                                    : Container(),
                                 ),
                               ),
                             ),
@@ -652,6 +655,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                         multiSelectionMode: widget.multiSelectionMode,
                         imageSelected: imageSelected,
                         multiSelectedImage: multiImages,
+                        appTheme: widget.appTheme,
                       ),
                     ],
                   );
