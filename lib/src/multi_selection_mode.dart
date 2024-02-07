@@ -1,11 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker_plus/image_picker_plus.dart';
 
 class MultiSelectionMode extends StatelessWidget {
   final ValueNotifier<bool> multiSelectionMode;
   final bool imageSelected;
   final List<File> multiSelectedImage;
+  final AppTheme appTheme;
 
   final File image;
   const MultiSelectionMode({
@@ -14,6 +16,7 @@ class MultiSelectionMode extends StatelessWidget {
     required this.imageSelected,
     required this.multiSelectedImage,
     required this.multiSelectionMode,
+    required this.appTheme,
   }) : super(key: key);
 
   @override
@@ -31,7 +34,7 @@ class MultiSelectionMode extends StatelessWidget {
               width: 25,
               decoration: BoxDecoration(
                 color: imageSelected
-                    ? Colors.blue
+                    ? appTheme.accentColor
                     : const Color.fromARGB(115, 222, 222, 222),
                 border: Border.all(
                   color: Colors.white,

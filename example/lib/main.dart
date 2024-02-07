@@ -75,9 +75,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
         SelectedImagesDetails? details =
         await picker.pickBoth(
-            source: ImageSource.both,
-            multiSelection: true,
-            byDate: true);
+            galleryDisplaySettings: GalleryDisplaySettings(
+              appTheme: AppTheme(
+                accentColor: Colors.orangeAccent,
+                backgroundColor: Colors.white70,
+              ),
+            ),
+          source: ImageSource.both,
+          multiSelection: true,
+          byDate: true);
         if (details != null) await displayDetails(details);
       },
       child: const Text("Normal 1 with date"),
