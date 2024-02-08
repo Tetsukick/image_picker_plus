@@ -1,3 +1,7 @@
+## 0.6.3
+* fix touch event area in each photos of gridview
+* enhance first loading time
+
 ## 0.6.2
 * fix ios loading image error issue
 * add loading snack bar
