@@ -90,6 +90,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   final cropKey = ValueNotifier(GlobalKey<CustomCropState>());
   bool noPaddingForGridView = false;
 
+  List<AssetPathEntity> _cachedAlbums = [];
   double scrollPixels = 0.0;
   bool isScrolling = false;
   bool noImages = false;
@@ -142,22 +143,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         return;
       }
       isFetchLoading.value = true;
-      const snackBar = SnackBar(
-        duration: Duration(seconds: 15),
-        content: Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Center(
-            child: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 16,),
-                Text('loading...'),
-              ],
-            ),
-          ),
-        ),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      _showLoadingSnackBar();
     }  
     lastPage.value = currentPageValue;
     PermissionState result = await PhotoManager.requestPermissionExtend();
@@ -166,17 +152,19 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           ? RequestType.common
           : (widget.showInternalImages ? RequestType.image : RequestType.video);
 
-      List<AssetPathEntity> albums =
+      if (_cachedAlbums.isEmpty) {
+        _cachedAlbums =
           await PhotoManager.getAssetPathList(onlyAll: true, type: type);
-      if (albums.isEmpty) {
-        WidgetsBinding.instance
-            .addPostFrameCallback((_) => setState(() => noImages = true));
-        return;
-      } else if (noImages) {
-        noImages = false;
+        if (_cachedAlbums.isEmpty) {
+          WidgetsBinding.instance
+              .addPostFrameCallback((_) => setState(() => noImages = true));
+          return;
+        } else if (noImages) {
+          noImages = false;
+        }
       }
       List<AssetEntity> media =
-          await albums[0].getAssetListPaged(page: currentPageValue, size: 60);
+          await _cachedAlbums[0].getAssetListPaged(page: currentPageValue, size: currentPageValue <= 1 ? 20 : 60);
       List<FutureBuilder<Uint8List?>> temp = [];
       List<File?> imageTemp = [];
 
@@ -207,6 +195,25 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       await PhotoManager.requestPermissionExtend();
       PhotoManager.openSetting();
     }
+  }
+
+  _showLoadingSnackBar() {
+    const snackBar = SnackBar(
+      duration: Duration(seconds: 15),
+      content: Padding(
+        padding: EdgeInsets.all(8.0),
+        child: Center(
+          child: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 16,),
+              Text('loading...'),
+            ],
+          ),
+        ),
+      ),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   Future<FutureBuilder<Uint8List?>> getImageGallery(
