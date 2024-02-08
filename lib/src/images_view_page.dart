@@ -657,12 +657,15 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                       gestureDetector(image, index, mediaList),
                       if (selectedImageValue == image)
                         gestureDetector(image, index, blurContainer()),
-                      MultiSelectionMode(
-                        image: image,
-                        multiSelectionMode: widget.multiSelectionMode,
-                        imageSelected: imageSelected,
-                        multiSelectedImage: multiImages,
-                        appTheme: widget.appTheme,
+                      IgnorePointer(
+                        ignoring: true,
+                        child: MultiSelectionMode(
+                          image: image,
+                          multiSelectionMode: widget.multiSelectionMode,
+                          imageSelected: imageSelected,
+                          multiSelectedImage: multiImages,
+                          appTheme: widget.appTheme,
+                        ),
                       ),
                     ],
                   );
