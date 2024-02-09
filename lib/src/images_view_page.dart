@@ -195,6 +195,11 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
       }
       WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
+    } else if (result == PermissionState.notDetermined) {
+      result = await PhotoManager.requestPermissionExtend();
+      if (result.isAuth) {
+        _fetchNewMedia(currentPageValue: currentPageValue);
+      }
     } else {
       setState(() => isGrantGalleryPermission = false);
     }
