@@ -159,34 +159,6 @@ class CustomImagePickerState extends State<CustomImagePicker>
     );
   }
 
-  Widget clearSelectedImages() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: GestureDetector(
-          onTap: () async {
-            setState(() {
-              multiSelectedImage.value.clear();
-            });
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                tapsNames.clearImagesText,
-                style: TextStyle(
-                    fontSize: 14,
-                    color: appTheme.focusColor,
-                    fontWeight: FontWeight.w500),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   replacingDeleteWidget(bool showDeleteText) {
     this.showDeleteText.value = showDeleteText;
   }
@@ -230,11 +202,8 @@ class CustomImagePickerState extends State<CustomImagePicker>
                 builder: (context, bool multiSelectionModeValue, child) {
                   if (enableVideo || enableCamera) {
                     if (!showImagePreview) {
-                      if (multiSelectionModeValue) {
-                        return clearSelectedImages();
-                      } else {
-                        return buildTabBar();
-                      }
+                      return multiSelectionModeValue
+                          ? const SizedBox() : buildTabBar();
                     } else {
                       return Visibility(
                         visible: !multiSelectionModeValue,
@@ -242,9 +211,7 @@ class CustomImagePickerState extends State<CustomImagePicker>
                       );
                     }
                   } else {
-                    return multiSelectionModeValue
-                        ? clearSelectedImages()
-                        : const SizedBox();
+                    return const SizedBox();
                   }
                 },
               )

@@ -278,7 +278,22 @@ class _ImagesViewPageState extends State<ImagesViewPage>
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           )
-        : buildGridView()
+        : ValueListenableBuilder(
+            valueListenable: widget.multiSelectedImages,
+            builder: (context, List<File> selectedImagesValue, child) {
+              return Stack(
+                children: [
+                  buildGridView(),
+                  Positioned(
+                    right: 24,
+                    bottom: 24,
+                    child: Visibility(
+                      visible: selectedImagesValue.isNotEmpty,
+                      child: clearSelectedImages()),
+                  ),
+                ],
+              );
+          })
     : permissionRequestDescriptionView();
   }
 
@@ -330,6 +345,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                                 ),
                               ),
                               onPressed: () async {
+                                await PhotoManager.requestPermissionExtend();
                                 PhotoManager.openSetting();
                               },
                               child: const Text(
@@ -484,6 +500,52 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           if (isShowDone) doneButton(),
         ],
       ),
+    );
+  }
+
+  Widget clearSelectedImages() {
+    return Stack(
+      alignment: Alignment(1.5, -1.5),
+      children: [
+        FloatingActionButton(
+          onPressed: () {
+            widget.clearMultiImages();
+            widget.multiSelectedImages.value.clear();
+          },
+          shape: const CircleBorder(),
+          foregroundColor: Colors.white,
+          backgroundColor: widget.appTheme.accentColor,
+          child: const Image(
+              width: 32,
+              height: 32,
+              image: AssetImage('packages/image_picker_plus/assets/image_unselect.png')),
+        ),
+        ValueListenableBuilder(
+          valueListenable: widget.multiSelectedImages,
+          builder: (context, List<File> selectedImagesValue, child) {
+            return Padding(
+              padding: const EdgeInsets.all(3),
+              child: Container(
+                height: 24,
+                width: 24,
+                decoration: BoxDecoration(
+                  color: widget.appTheme.accentColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    "${selectedImagesValue.length}",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                )
+              ),
+            );
+          }
+        ),
+      ],
     );
   }
 
