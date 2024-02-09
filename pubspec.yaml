@@ -17,6 +17,7 @@ dependencies:
   video_player: ^2.8.2
   image_picker: ^1.0.7
   intl: ^0.18.1
+  package_info_plus: ^5.0.1
 
 dev_dependencies:
   flutter_test:
@@ -25,6 +26,8 @@ dev_dependencies:
   flutter_lints: ^3.0.1
 
 flutter:
+  assets:
+    - assets/image_unselect.png
   plugin:
     platforms:
       android:
