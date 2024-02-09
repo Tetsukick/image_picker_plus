@@ -9,6 +9,7 @@ import 'package:image_picker_plus/src/multi_selection_mode.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker_plus/src/utilities/datetime_extention.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -94,6 +95,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   double scrollPixels = 0.0;
   bool isScrolling = false;
   bool noImages = false;
+  bool isGrantGalleryPermission = false;
   final noDuration = ValueNotifier(false);
   int indexOfLatestImage = -1;
 
@@ -146,8 +148,10 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       _showLoadingSnackBar();
     }  
     lastPage.value = currentPageValue;
+
     PermissionState result = await PhotoManager.requestPermissionExtend();
     if (result.isAuth) {
+      setState(() => isGrantGalleryPermission = true);
       RequestType type = widget.showInternalVideos && widget.showInternalImages
           ? RequestType.common
           : (widget.showInternalImages ? RequestType.image : RequestType.video);
@@ -192,8 +196,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       }
       WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
     } else {
-      await PhotoManager.requestPermissionExtend();
-      PhotoManager.openSetting();
+      setState(() => isGrantGalleryPermission = false);
     }
   }
 
@@ -263,14 +266,95 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return noImages
+    return isGrantGalleryPermission ? noImages
         ? Center(
             child: Text(
               widget.tabsTexts.noImagesFounded,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           )
-        : buildGridView();
+        : buildGridView()
+    : permissionRequestDescriptionView();
+  }
+
+  Widget permissionRequestDescriptionView() {
+
+    return Center(
+        child: FutureBuilder(
+            future: getAppName(),
+            builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+              if (snapshot.hasData) {
+                return Column(
+                  children: [
+                    normalAppBar(isShowDone: false),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Text(
+                            "${snapshot.data} doesn’t have permission to access your photos. Please allow ${snapshot.data} to access your photos.",
+                            style: const TextStyle(
+                              color: Color(0xFF444444),
+                              fontSize: 20,
+                              fontFamily: 'Dosis',
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.20,
+                            ),
+                          ),
+                          const SizedBox(height: 24,),
+                          Text(
+                            'Selecting “Allow” does not give ${snapshot.data} permission to upload photos without your knowledge or consent',
+                            style: const TextStyle(
+                              color: Color(0xFF444444),
+                              fontSize: 18,
+                              fontFamily: 'Dosis',
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 1.08,
+                            ),
+                          ),
+                          const SizedBox(height: 48,),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 64,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                backgroundColor: widget.appTheme.accentColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(32),
+                                ),
+                              ),
+                              onPressed: () async {
+                                PhotoManager.openSetting();
+                              },
+                              child: const Text(
+                                'CHANGE SETTINGS',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontFamily: 'Dosis',
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.60,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                return const SizedBox();
+              }
+            }
+        )
+    );
+  }
+
+  Future<String> getAppName() async {
+    return (await PackageInfo.fromPlatform()).appName;
   }
 
   ValueListenableBuilder<bool> buildGridView() {
@@ -381,7 +465,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     );
   }
 
-  Widget normalAppBar() {
+  Widget normalAppBar({bool isShowDone = true}) {
     double width = MediaQuery.of(context).size.width;
     return Container(
       color: widget.whiteColor,
@@ -392,7 +476,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         children: [
           existButton(),
           const Spacer(),
-          doneButton(),
+          if (isShowDone) doneButton(),
         ],
       ),
     );

@@ -6,6 +6,8 @@ PODS:
     - Flutter
   - image_picker_plus (0.0.1):
     - Flutter
+  - package_info_plus (0.4.5):
+    - Flutter
   - photo_manager (2.0.0):
     - Flutter
     - FlutterMacOS
@@ -18,6 +20,7 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - image_picker_plus (from `.symlinks/plugins/image_picker_plus/ios`)
+  - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - photo_manager (from `.symlinks/plugins/photo_manager/ios`)
   - video_player_avfoundation (from `.symlinks/plugins/video_player_avfoundation/darwin`)
 
@@ -30,6 +33,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   image_picker_plus:
     :path: ".symlinks/plugins/image_picker_plus/ios"
+  package_info_plus:
+    :path: ".symlinks/plugins/package_info_plus/ios"
   photo_manager:
     :path: ".symlinks/plugins/photo_manager/ios"
   video_player_avfoundation:
@@ -40,6 +45,7 @@ SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   image_picker_ios: 99dfe1854b4fa34d0364e74a78448a0151025425
   image_picker_plus: 4db202ba8188020d5eb9d333c404ed98e221093a
+  package_info_plus: 115f4ad11e0698c8c1c5d8a689390df880f47e85
   photo_manager: 4f6810b7dfc4feb03b461ac1a70dacf91fba7604
   video_player_avfoundation: e9e6f9cae7d7a6d9b43519b0aab382bca60fcfd1
 
