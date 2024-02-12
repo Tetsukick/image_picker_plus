@@ -6,6 +6,7 @@ import 'package:image_picker_plus/src/images_view_page.dart';
 import 'package:image_picker_plus/src/utilities/enum.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 
 class CustomImagePicker extends StatefulWidget {
   final ImageSource source;
@@ -32,12 +33,12 @@ class CustomImagePickerState extends State<CustomImagePicker>
   final clearVideoRecord = ValueNotifier(false);
   final redDeleteText = ValueNotifier(false);
   final selectedPage = ValueNotifier(SelectedPage.left);
-  ValueNotifier<List<File>> multiSelectedImage = ValueNotifier([]);
+  ValueNotifier<List<AssetEntity>> multiSelectedImage = ValueNotifier([]);
   final multiSelectionMode = ValueNotifier(true);
   final showDeleteText = ValueNotifier(false);
   final selectedVideo = ValueNotifier(false);
   bool noGallery = true;
-  ValueNotifier<File?> selectedCameraImage = ValueNotifier(null);
+  ValueNotifier<AssetEntity?> selectedCameraImage = ValueNotifier(null);
   late bool cropImage;
   late AppTheme appTheme;
   late TabsTexts tapsNames;

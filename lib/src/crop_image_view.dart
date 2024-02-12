@@ -3,6 +3,7 @@ import 'package:image_picker_plus/src/custom_expand_icon.dart';
 import 'package:image_picker_plus/src/entities/app_theme.dart';
 import 'package:image_picker_plus/src/custom_packages/crop_image/crop_image.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 
 class CropImageView extends StatefulWidget {
   final ValueNotifier<GlobalKey<CustomCropState>> cropKey;
@@ -15,7 +16,7 @@ class CropImageView extends StatefulWidget {
 
   /// To avoid lag when you interacting with image when it expanded
   final ValueNotifier<bool> enableVerticalTapping;
-  final ValueNotifier<File?> selectedImage;
+  final ValueNotifier<AssetEntity?> selectedImage;
 
   final VoidCallback clearMultiImages;
 
@@ -73,7 +74,7 @@ class _CropImageViewState extends State<CropImageView> {
             : null,
         child: ValueListenableBuilder(
           valueListenable: widget.selectedImage,
-          builder: (context, File? selectedImageValue, child) {
+          builder: (context, AssetEntity? selectedImageValue, child) {
             if (selectedImageValue != null) {
               return showSelectedImage(context, selectedImageValue);
             } else {
@@ -85,7 +86,7 @@ class _CropImageViewState extends State<CropImageView> {
     );
   }
 
-  Container showSelectedImage(BuildContext context, File selectedImageValue) {
+  Container showSelectedImage(BuildContext context, AssetEntity selectedImageValue) {
     double width = MediaQuery.of(context).size.width;
     return Container(
       key: GlobalKey(debugLabel: "have image"),
@@ -165,10 +166,9 @@ class _CropImageViewState extends State<CropImageView> {
     );
   }
 
-  Widget cropImageWidget(File selectedImageValue, bool expandImageValue) {
+  Widget cropImageWidget(AssetEntity selectedImageValue, bool expandImageValue) {
     GlobalKey<CustomCropState> cropKey = widget.cropKey.value;
-    String path = selectedImageValue.path;
-    bool isThatVideo = path.contains("mp4", path.length - 5);
+    bool isThatVideo = selectedImageValue.type == AssetType.video;
     return CustomCrop(
       image: selectedImageValue,
       isThatImage: !isThatVideo,

@@ -2,14 +2,15 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker_plus/image_picker_plus.dart';
+import 'package:photo_manager/photo_manager.dart';
 
 class MultiSelectionMode extends StatelessWidget {
   final ValueNotifier<bool> multiSelectionMode;
   final bool imageSelected;
-  final List<File> multiSelectedImage;
+  final List<AssetEntity> multiSelectedImage;
   final AppTheme appTheme;
 
-  final File image;
+  final AssetEntity image;
   const MultiSelectionMode({
     Key? key,
     required this.image,
