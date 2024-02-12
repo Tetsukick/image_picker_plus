@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:video_player/video_player.dart';
 
 const _kCropGridColumnCount = 3;
@@ -15,7 +16,7 @@ enum _CropAction { none, moving, cropping, scaling }
 enum _CropHandleSide { none, topLeft, topRight, bottomLeft, bottomRight }
 
 class CustomCrop extends StatefulWidget {
-  final File image;
+  final AssetEntity image;
   final double? aspectRatio;
   final double maximumScale;
 
@@ -136,10 +137,10 @@ class CustomCropState extends State<CustomCrop> with TickerProviderStateMixin {
     }
   }
 
-  void _getImage({bool force = false}) {
+  Future<void> _getImage({bool force = false}) async {
     if (widget.isThatImage) {
       final oldImageStream = _imageStream;
-      FileImage image = FileImage(widget.image, scale: 1.0);
+      FileImage image = FileImage((await widget.image.file)!, scale: 1.0);
       final newImageStream =
           image.resolve(createLocalImageConfiguration(context));
       _imageStream = newImageStream;
@@ -621,7 +622,7 @@ class _CropPainter extends CustomPainter {
 }
 
 class _DisplayVideo extends StatefulWidget {
-  final File selectedFile;
+  final AssetEntity selectedFile;
   const _DisplayVideo({Key? key, required this.selectedFile}) : super(key: key);
 
   @override
@@ -636,9 +637,13 @@ class _DisplayVideoState extends State<_DisplayVideo> {
   void initState() {
     super.initState();
 
-    controller = VideoPlayerController.file(widget.selectedFile);
-    initializeVideoPlayerFuture = controller.initialize();
-    controller.setLooping(true);
+    widget.selectedFile.file.then((value) {
+      if (value != null) {
+        controller = VideoPlayerController.file(value);
+        initializeVideoPlayerFuture = controller.initialize();
+        controller.setLooping(true);
+      }
+    });
   }
 
   @override

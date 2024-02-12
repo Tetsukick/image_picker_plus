@@ -20,7 +20,7 @@ class CustomCameraDisplay extends StatefulWidget {
   final bool enableCamera;
   final bool enableVideo;
   final VoidCallback moveToVideoScreen;
-  final ValueNotifier<File?> selectedCameraImage;
+  final ValueNotifier<AssetEntity?> selectedCameraImage;
   final ValueNotifier<bool> redDeleteText;
   final ValueChanged<bool> replacingTabBar;
   final ValueNotifier<bool> clearVideoRecord;
@@ -129,7 +129,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
 
   Widget buildBody() {
     Color whiteColor = widget.appTheme.primaryColor;
-    File? selectedImage = widget.selectedCameraImage.value;
+    AssetEntity? selectedImage = widget.selectedCameraImage.value;
     return Column(
       children: [
         appBar(),
@@ -232,9 +232,8 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
     );
   }
 
-  CustomCrop buildCrop(File selectedImage) {
-    String path = selectedImage.path;
-    bool isThatVideo = path.contains("mp4", path.length - 5);
+  CustomCrop buildCrop(AssetEntity selectedImage) {
+    bool isThatVideo = selectedImage.type == AssetType.video;
     return CustomCrop(
       image: selectedImage,
       isThatImage: !isThatVideo,
@@ -247,7 +246,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
   AppBar appBar() {
     Color whiteColor = widget.appTheme.primaryColor;
     Color blackColor = widget.appTheme.focusColor;
-    File? selectedImage = widget.selectedCameraImage.value;
+    AssetEntity? selectedImage = widget.selectedCameraImage.value;
     return AppBar(
       backgroundColor: whiteColor,
       elevation: 0,
@@ -271,6 +270,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
                   isThatImage: false,
                   selectedFile: videoRecordFile!,
                   selectedByte: byte,
+                  entity: selectedImage!,
                 );
                 SelectedImagesDetails details = SelectedImagesDetails(
                   multiSelectionMode: false,
@@ -293,6 +293,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
                     isThatImage: true,
                     selectedFile: croppedByte,
                     selectedByte: byte,
+                    entity: selectedImage,
                   );
 
                   SelectedImagesDetails details = SelectedImagesDetails(
@@ -316,7 +317,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
     );
   }
 
-  Future<File?> cropImage(File imageFile) async {
+  Future<File?> cropImage(AssetEntity imageFile) async {
     await ImageCrop.requestPermissions();
     final scale = cropKey.currentState!.scale;
     final area = cropKey.currentState!.area;
@@ -324,7 +325,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
       return null;
     }
     final sample = await ImageCrop.sampleImage(
-      file: imageFile,
+      file: (await imageFile.file)!,
       preferredSize: (2000 / scale).round(),
     );
     final File file = await ImageCrop.cropImage(
@@ -357,7 +358,7 @@ class CustomCameraDisplayState extends State<CustomCameraDisplay> {
         final image = await controller.takePicture();
         File selectedImage = File(image.path);
         setState(() {
-          widget.selectedCameraImage.value = selectedImage;
+          // widget.selectedCameraImage.value = selectedImage;
           widget.replacingTabBar(true);
         });
       } else {

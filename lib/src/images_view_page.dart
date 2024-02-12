@@ -14,7 +14,7 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:shimmer/shimmer.dart';
 
 class ImagesViewPage extends StatefulWidget {
-  final ValueNotifier<List<File>> multiSelectedImages;
+  final ValueNotifier<List<AssetEntity>> multiSelectedImages;
   final ValueNotifier<bool> multiSelectionMode;
   final TabsTexts tabsTexts;
   final bool cropImage;
@@ -62,7 +62,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   final ValueNotifier<List<FutureBuilder<Uint8List?>>> _mediaList =
       ValueNotifier([]);
 
-  ValueNotifier<List<File?>> allImages = ValueNotifier([]);
+  ValueNotifier<List<AssetEntity?>> allImages = ValueNotifier([]);
 
   ValueNotifier<Map<String, List<(int, FutureBuilder<Uint8List?>)>>>
       mediaListByDate = ValueNotifier({});
@@ -70,7 +70,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   final ValueNotifier<List<double?>> scaleOfCropsKeys = ValueNotifier([]);
   final ValueNotifier<List<Rect?>> areaOfCropsKeys = ValueNotifier([]);
 
-  ValueNotifier<File?> selectedImage = ValueNotifier(null);
+  ValueNotifier<AssetEntity?> selectedImage = ValueNotifier(null);
   ValueNotifier<List<int>> indexOfSelectedImages = ValueNotifier([]);
 
   ScrollController scrollController = ScrollController();
@@ -170,12 +170,10 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       List<AssetEntity> media =
           await _cachedAlbums[0].getAssetListPaged(page: currentPageValue, size: currentPageValue <= 1 ? 20 : 60);
       List<FutureBuilder<Uint8List?>> temp = [];
-      List<File?> imageTemp = [];
 
       for (int i = 0; i < media.length; i++) {
         FutureBuilder<Uint8List?> gridViewImage =
             await getImageGallery(media, i);
-        File? image = await highQualityImage(media, i);
         DateTime exifDate = media[i].createDateTime;
         mediaListByDate.value.update(
           exifDate.toYyyyMMdd,
@@ -183,11 +181,10 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           ifAbsent: () => [(dataIndex.value, gridViewImage)],
         );
         temp.add(gridViewImage);
-        imageTemp.add(image);
         dataIndex.value++;
       }
       _mediaList.value.addAll(temp);
-      allImages.value.addAll(imageTemp);
+      allImages.value.addAll(media);
       currentPage.value++;
       isImagesReady.value = true;
       isFetchLoading.value = false;
@@ -280,7 +277,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           )
         : ValueListenableBuilder(
             valueListenable: widget.multiSelectedImages,
-            builder: (context, List<File> selectedImagesValue, child) {
+            builder: (context, List<AssetEntity> selectedImagesValue, child) {
               return Stack(
                 children: [
                   buildGridView(),
@@ -522,7 +519,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         ),
         ValueListenableBuilder(
           valueListenable: widget.multiSelectedImages,
-          builder: (context, List<File> selectedImagesValue, child) {
+          builder: (context, List<AssetEntity> selectedImagesValue, child) {
             return Padding(
               padding: const EdgeInsets.all(3),
               child: Container(
@@ -583,7 +580,10 @@ class _ImagesViewPageState extends State<ImagesViewPage>
 
             List<SelectedByte> selectedBytes = [];
             for (int i = 0; i < widget.multiSelectedImages.value.length; i++) {
-              File currentImage = widget.multiSelectedImages.value[i];
+              File? currentImage = await widget.multiSelectedImages.value[i].file;
+              if (currentImage == null) {
+                continue;
+              }
               String path = currentImage.path;
               bool isThatVideo = path.contains("mp4", path.length - 5);
               File? croppedImage = !isThatVideo && widget.cropImage
@@ -595,6 +595,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                 isThatImage: !isThatVideo,
                 selectedFile: image,
                 selectedByte: byte,
+                entity: widget.multiSelectedImages.value[i],
               );
               selectedBytes.add(img);
             }
@@ -613,8 +614,9 @@ class _ImagesViewPageState extends State<ImagesViewPage>
               }
             }
           } else {
-            File? image = selectedImage.value;
-            if (image == null) return;
+            AssetEntity? imageEntity = selectedImage.value;
+            File? image = await imageEntity?.file;
+            if (image == null || imageEntity == null) return;
             String path = image.path;
 
             bool isThatVideo = path.contains("mp4", path.length - 5);
@@ -628,6 +630,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
               isThatImage: !isThatVideo,
               selectedFile: img,
               selectedByte: byte,
+              entity: selectedImage.value!,
             );
             SelectedImagesDetails details = SelectedImagesDetails(
               multiSelectionMode: false,
@@ -715,12 +718,12 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       String date, List<(int, FutureBuilder<Uint8List?>)> mediaList) {
     return ValueListenableBuilder(
         valueListenable: allImages,
-        builder: (context, List<File?> allImagesValue, child) {
+        builder: (context, List<AssetEntity?> allImagesValue, child) {
           final allImagesInDate =
               mediaList.map((e) => (allImages.value[e.$1], e.$1)).toList();
           onTapDateHeader({
-            required List<(File?, int)> allImagesInDate,
-            required List<File> selectedImagesValue,
+            required List<(AssetEntity?, int)> allImagesInDate,
+            required List<AssetEntity> selectedImagesValue,
             required bool forceRemove,
             required bool forceAdd,
           }) {
@@ -737,7 +740,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
               builder: (context, bool isImagesReadyValue, child) {
                 return ValueListenableBuilder(
                     valueListenable: widget.multiSelectedImages,
-                    builder: (context, List<File> selectedImagesValue, child) {
+                    builder: (context, List<AssetEntity> selectedImagesValue, child) {
                       bool imageSelected = allImagesInDate.every((element) =>
                           selectedImagesValue.contains(element.$1));
                       return Container(
@@ -787,22 +790,22 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         });
   }
 
-  ValueListenableBuilder<File?> buildImage(
+  ValueListenableBuilder<AssetEntity?> buildImage(
       List<FutureBuilder<Uint8List?>> mediaListValue, int index) {
     return ValueListenableBuilder(
       valueListenable: selectedImage,
-      builder: (context, File? selectedImageValue, child) {
+      builder: (context, AssetEntity? selectedImageValue, child) {
         return ValueListenableBuilder(
           valueListenable: allImages,
-          builder: (context, List<File?> allImagesValue, child) {
+          builder: (context, List<AssetEntity?> allImagesValue, child) {
             return ValueListenableBuilder(
               valueListenable: widget.multiSelectedImages,
-              builder: (context, List<File> selectedImagesValue, child) {
+              builder: (context, List<AssetEntity> selectedImagesValue, child) {
                 FutureBuilder<Uint8List?> mediaList = _mediaList.value[index];
-                File? image = allImagesValue[index];
+                AssetEntity? image = allImagesValue[index];
                 if (image != null) {
                   bool imageSelected = selectedImagesValue.contains(image);
-                  List<File> multiImages = selectedImagesValue;
+                  List<AssetEntity> multiImages = selectedImagesValue;
                   return Stack(
                     children: [
                       gestureDetector(image, index, mediaList),
@@ -839,12 +842,12 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     );
   }
 
-  Widget gestureDetector(File image, int index, Widget childWidget) {
+  Widget gestureDetector(AssetEntity image, int index, Widget childWidget) {
     return ValueListenableBuilder(
       valueListenable: widget.multiSelectionMode,
       builder: (context, bool multipleValue, child) => ValueListenableBuilder(
         valueListenable: widget.multiSelectedImages,
-        builder: (context, List<File> selectedImagesValue, child) =>
+        builder: (context, List<AssetEntity> selectedImagesValue, child) =>
             GestureDetector(
                 onTap: () => onTapImage(image, selectedImagesValue, index),
                 onLongPressUp: () {
@@ -865,7 +868,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     );
   }
 
-  onTapImage(File image, List<File> selectedImagesValue, int index) {
+  onTapImage(AssetEntity image, List<AssetEntity> selectedImagesValue, int index) {
     setState(() {
       if (widget.multiSelectionMode.value) {
         bool close = selectionImageCheck(image, selectedImagesValue, index);
@@ -880,7 +883,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   }
 
   bool selectionImageCheck(
-      File image, List<File> multiSelectionValue, int index,
+      AssetEntity image, List<AssetEntity> multiSelectionValue, int index,
       {bool enableCopy = false,
       bool forceAdd = false,
       bool forceRemove = false}) {
