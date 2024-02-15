@@ -11,6 +11,10 @@ class TabsTexts {
   final String notFoundingCameraText;
   final String noImagesFounded;
   final String acceptAllPermissions;
+  final String loading;
+  final String? requestPhotoAccessPermission;
+  final String? requestPhotoAccessPermissionDescription;
+  final String changeSetting;
 
   TabsTexts({
     this.videoText = "VIDEO",
@@ -23,5 +27,9 @@ class TabsTexts {
     this.holdButtonText = "Press and hold to record",
     this.noImagesFounded = "There is no images",
     this.acceptAllPermissions = "Failed! accept all access permissions.",
+    this.loading = 'loading...',
+    this.requestPhotoAccessPermission,
+    this.requestPhotoAccessPermissionDescription,
+    this.changeSetting = 'CHANGE SETTINGS',
   });
 }

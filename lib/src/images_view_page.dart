@@ -203,16 +203,16 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   }
 
   _showLoadingSnackBar() {
-    const snackBar = SnackBar(
-      duration: Duration(seconds: 15),
+    final snackBar = SnackBar(
+      duration: const Duration(seconds: 15),
       content: Padding(
-        padding: EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8.0),
         child: Center(
           child: Row(
             children: [
-              CircularProgressIndicator(),
-              SizedBox(width: 16,),
-              Text('loading...'),
+              const CircularProgressIndicator(),
+              const SizedBox(width: 16,),
+              Text(widget.tabsTexts.loading),
             ],
           ),
         ),
@@ -309,7 +309,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                       child: Column(
                         children: [
                           Text(
-                            "${snapshot.data} doesn’t have permission to access your photos. Please allow ${snapshot.data} to access your photos.",
+                            widget.tabsTexts.requestPhotoAccessPermission
+                                ?? "${snapshot.data} doesn’t have permission to access your photos. Please allow ${snapshot.data} to access your photos.",
                             style: const TextStyle(
                               color: Color(0xFF444444),
                               fontSize: 20,
@@ -320,7 +321,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                           ),
                           const SizedBox(height: 24,),
                           Text(
-                            'Selecting “Allow” does not give ${snapshot.data} permission to upload photos without your knowledge or consent',
+                            widget.tabsTexts.requestPhotoAccessPermissionDescription
+                                ?? 'Selecting “Allow” does not give ${snapshot.data} permission to upload photos without your knowledge or consent',
                             style: const TextStyle(
                               color: Color(0xFF444444),
                               fontSize: 18,
@@ -345,10 +347,10 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                                 await PhotoManager.requestPermissionExtend();
                                 PhotoManager.openSetting();
                               },
-                              child: const Text(
-                                'CHANGE SETTINGS',
+                              child: Text(
+                                widget.tabsTexts.changeSetting,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 20,
                                   fontFamily: 'Dosis',
@@ -502,7 +504,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
 
   Widget clearSelectedImages() {
     return Stack(
-      alignment: Alignment(1.5, -1.5),
+      alignment: const Alignment(1.5, -1.5),
       children: [
         FloatingActionButton(
           onPressed: () {
