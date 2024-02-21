@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:image_picker_plus/image_picker_plus.dart';
+import 'package:image_picker_plus/src/child_grid_view_image.dart';
 import 'package:image_picker_plus/src/crop_image_view.dart';
 import 'package:image_picker_plus/src/custom_packages/crop_image/crop_image.dart';
 import 'package:image_picker_plus/src/custom_packages/crop_image/main/image_crop.dart';
@@ -168,7 +170,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         }
       }
       List<AssetEntity> media =
-          await _cachedAlbums[0].getAssetListPaged(page: currentPageValue, size: currentPageValue <= 1 ? 20 : 60);
+          await _cachedAlbums[0].getAssetListPaged(page: currentPageValue, size: currentPageValue <= 1 ? 30 : 60);
       List<FutureBuilder<Uint8List?>> temp = [];
 
       for (int i = 0; i < media.length; i++) {
@@ -810,9 +812,17 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                   List<AssetEntity> multiImages = selectedImagesValue;
                   return Stack(
                     children: [
-                      gestureDetector(image, index, mediaList),
+                      ChildGridViewImage(
+                        image: image,
+                        index: index,
+                        childWidget: mediaList,
+                        onTap: onTapImage,
+                        multiSelectedImages: widget.multiSelectedImages,
+                        multiSelectionMode: widget.multiSelectionMode,
+                        appTheme: widget.appTheme,
+                      ),
                       if (selectedImageValue == image)
-                        gestureDetector(image, index, blurContainer()),
+                        IgnorePointer(ignoring: true, child: blurContainer()),
                       IgnorePointer(
                         ignoring: true,
                         child: MultiSelectionMode(
@@ -841,32 +851,6 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       width: double.infinity,
       color: const Color.fromARGB(184, 234, 234, 234),
       height: double.maxFinite,
-    );
-  }
-
-  Widget gestureDetector(AssetEntity image, int index, Widget childWidget) {
-    return ValueListenableBuilder(
-      valueListenable: widget.multiSelectionMode,
-      builder: (context, bool multipleValue, child) => ValueListenableBuilder(
-        valueListenable: widget.multiSelectedImages,
-        builder: (context, List<AssetEntity> selectedImagesValue, child) =>
-            GestureDetector(
-                onTap: () => onTapImage(image, selectedImagesValue, index),
-                onLongPressUp: () {
-                  if (multipleValue) {
-                    selectionImageCheck(image, selectedImagesValue, index,
-                        enableCopy: true);
-                    expandImageView.value = false;
-                    moveAwayHeight.value = 0;
-
-                    enableVerticalTapping.value = false;
-                    setState(() => noPaddingForGridView = true);
-                  } else {
-                    onTapImage(image, selectedImagesValue, index);
-                  }
-                },
-                child: childWidget),
-      ),
     );
   }
 
