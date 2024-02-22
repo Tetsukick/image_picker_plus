@@ -208,11 +208,15 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     }
   }
 
-  _changeAlbum(AssetPathEntity album) {
+  _changeAlbum(AssetPathEntity album) async {
     setState(() {
       isImagesReady.value = false;
+    });
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() {
       selectedAlbum.value = album;
       _mediaList.value = [];
+      mediaListByDate.value = {};
       allImages.value = [];
       currentPage.value = 0;
     });
@@ -411,8 +415,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                     child) {
                   return ValueListenableBuilder(
                     valueListenable: lastPage,
-                    builder: (context, int lastPageValue, child) =>
-                        ValueListenableBuilder(
+                    builder: (context, int lastPageValue, child) => ValueListenableBuilder(
                       valueListenable: currentPage,
                       builder: (context, int currentPageValue, child) {
                         if (!widget.showImagePreview) {
@@ -572,7 +575,16 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         itemBuilder: (context, index) {
           final album = _cachedAlbums[index];
           return ListTile(
-            title: Text(album.name),
+            title: Row(
+              children: [
+                Text(album.name),
+                const Spacer(),
+                if (selectedAlbum.value == album) Icon(
+                  Icons.check,
+                  color: widget.appTheme.accentColor,
+                ),
+              ],
+            ),
             onTap: () {
               _changeAlbum(album);
               Navigator.pop(context);
@@ -882,42 +894,47 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           valueListenable: allImages,
           builder: (context, List<AssetEntity?> allImagesValue, child) {
             return ValueListenableBuilder(
-              valueListenable: widget.multiSelectedImages,
-              builder: (context, List<AssetEntity> selectedImagesValue, child) {
-                FutureBuilder<Uint8List?> mediaList = _mediaList.value[index];
-                AssetEntity? image = allImagesValue[index];
-                if (image != null) {
-                  bool imageSelected = selectedImagesValue.contains(image);
-                  List<AssetEntity> multiImages = selectedImagesValue;
-                  return Stack(
-                    children: [
-                      ChildGridViewImage(
-                        image: image,
-                        index: index,
-                        childWidget: mediaList,
-                        onTap: onTapImage,
-                        multiSelectedImages: widget.multiSelectedImages,
-                        multiSelectionMode: widget.multiSelectionMode,
-                        appTheme: widget.appTheme,
-                      ),
-                      if (selectedImageValue == image)
-                        IgnorePointer(ignoring: true, child: blurContainer()),
-                      IgnorePointer(
-                        ignoring: true,
-                        child: MultiSelectionMode(
-                          image: image,
-                          multiSelectionMode: widget.multiSelectionMode,
-                          imageSelected: imageSelected,
-                          multiSelectedImage: multiImages,
-                          appTheme: widget.appTheme,
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  return Container();
-                }
-              },
+              valueListenable: _mediaList,
+              builder: (context, List<FutureBuilder<Uint8List?>> mediaListValue, child) {
+                return ValueListenableBuilder(
+                  valueListenable: widget.multiSelectedImages,
+                  builder: (context, List<AssetEntity> selectedImagesValue, child) {
+                    FutureBuilder<Uint8List?> mediaList = mediaListValue[index];
+                    AssetEntity? image = allImagesValue[index];
+                    if (image != null) {
+                      bool imageSelected = selectedImagesValue.contains(image);
+                      List<AssetEntity> multiImages = selectedImagesValue;
+                      return Stack(
+                        children: [
+                          ChildGridViewImage(
+                            image: image,
+                            index: index,
+                            childWidget: mediaList,
+                            onTap: onTapImage,
+                            multiSelectedImages: widget.multiSelectedImages,
+                            multiSelectionMode: widget.multiSelectionMode,
+                            appTheme: widget.appTheme,
+                          ),
+                          if (selectedImageValue == image)
+                            IgnorePointer(ignoring: true, child: blurContainer()),
+                          IgnorePointer(
+                            ignoring: true,
+                            child: MultiSelectionMode(
+                              image: image,
+                              multiSelectionMode: widget.multiSelectionMode,
+                              imageSelected: imageSelected,
+                              multiSelectedImage: multiImages,
+                              appTheme: widget.appTheme,
+                            ),
+                          ),
+                        ],
+                      );
+                    } else {
+                      return Container();
+                    }
+                  },
+                );
+              }
             );
           },
         );
