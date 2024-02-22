@@ -161,7 +161,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
 
       if (_cachedAlbums.isEmpty) {
         _cachedAlbums =
-          await PhotoManager.getAssetPathList(onlyAll: true, type: type);
+          await PhotoManager.getAssetPathList(onlyAll: false, type: type);
         if (_cachedAlbums.isEmpty) {
           WidgetsBinding.instance
               .addPostFrameCallback((_) => setState(() => noImages = true));
@@ -209,10 +209,13 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   }
 
   _changeAlbum(AssetPathEntity album) {
-    selectedAlbum.value = album;
-    _mediaList.value = [];
-    allImages.value = [];
-    currentPage.value = 0;
+    setState(() {
+      isImagesReady.value = false;
+      selectedAlbum.value = album;
+      _mediaList.value = [];
+      allImages.value = [];
+      currentPage.value = 0;
+    });
     _fetchNewMedia(currentPageValue: 0);
   }
 
@@ -555,7 +558,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
 
   Widget albumListBottomSheet() {
     return Container(
-      height: double.infinity,
+      height: 300,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
@@ -564,8 +567,18 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         ),
       ),
       margin: EdgeInsets.only(top: 80),
-      child: Center(
-        child: Text('modal bottom sheet'),
+      child: ListView.builder(
+        itemCount: _cachedAlbums.length,
+        itemBuilder: (context, index) {
+          final album = _cachedAlbums[index];
+          return ListTile(
+            title: Text(album.name),
+            onTap: () {
+              _changeAlbum(album);
+              Navigator.pop(context);
+            },
+          );
+        }
       ),
     );
   }
