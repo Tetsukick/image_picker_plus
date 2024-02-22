@@ -563,7 +563,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   Widget albumListBottomSheet() {
     return Container(
       height: 300,
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(10),
@@ -575,27 +575,55 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         itemCount: _cachedAlbums.length,
         itemBuilder: (context, index) {
           final album = _cachedAlbums[index];
-          return ListTile(
-            title: Row(
-              children: [
-                FutureBuilder(future: album.assetCountAsync, builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return Text('${album.name} (${snapshot.data})');
-                  } else {
-                    return const SizedBox();
-                  }
-                }),
-                const Spacer(),
-                if (selectedAlbum.value == album) Icon(
-                  Icons.check,
-                  color: widget.appTheme.accentColor,
+          return SafeArea(
+            child: ListTile(
+              title: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    FutureBuilder(
+                      future: album.getAssetListPaged(page: 0, size: 1),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data != null
+                            && snapshot.data!.isNotEmpty && snapshot.data!.first.type == AssetType.image) {
+                          return FutureBuilder(future: snapshot.data!.first.file,
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData && snapshot.data != null) {
+                                  return Image.file(
+                                    snapshot.data!,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                  );
+                                } else {
+                                  return Container(width: 50, height: 50, color: Colors.grey,);
+                                }
+                              });
+                        } else {
+                          return Container(width: 50, height: 50, color: Colors.grey,);
+                        }
+                      }),
+                    const SizedBox(width: 8,),
+                    FutureBuilder(future: album.assetCountAsync, builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Text('${album.name} (${snapshot.data})');
+                      } else {
+                        return const SizedBox();
+                      }
+                    }),
+                    const Spacer(),
+                    if (selectedAlbum.value == album) Icon(
+                      Icons.check,
+                      color: widget.appTheme.accentColor,
+                    ),
+                  ],
                 ),
-              ],
+              ),
+              onTap: () {
+                _changeAlbum(album);
+                Navigator.pop(context);
+              },
             ),
-            onTap: () {
-              _changeAlbum(album);
-              Navigator.pop(context);
-            },
           );
         }
       ),
