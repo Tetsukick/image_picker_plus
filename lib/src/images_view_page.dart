@@ -219,6 +219,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       mediaListByDate.value = {};
       allImages.value = [];
       currentPage.value = 0;
+      lastPage.value = 0;
     });
     _fetchNewMedia(currentPageValue: 0);
   }
@@ -577,7 +578,13 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           return ListTile(
             title: Row(
               children: [
-                Text(album.name),
+                FutureBuilder(future: album.assetCountAsync, builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Text('${album.name} (${snapshot.data})');
+                  } else {
+                    return const SizedBox();
+                  }
+                }),
                 const Spacer(),
                 if (selectedAlbum.value == album) Icon(
                   Icons.check,
