@@ -94,6 +94,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   bool noPaddingForGridView = false;
 
   List<AssetPathEntity> _cachedAlbums = [];
+  ValueNotifier<AssetPathEntity?> selectedAlbum = ValueNotifier(null);
   double scrollPixels = 0.0;
   bool isScrolling = false;
   bool noImages = false;
@@ -165,12 +166,15 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           WidgetsBinding.instance
               .addPostFrameCallback((_) => setState(() => noImages = true));
           return;
-        } else if (noImages) {
-          noImages = false;
+        } else {
+          setState(() {
+            noImages = false;
+            selectedAlbum.value = _cachedAlbums[0];
+          });
         }
       }
       List<AssetEntity> media =
-          await _cachedAlbums[0].getAssetListPaged(page: currentPageValue, size: currentPageValue <= 1 ? 30 : 60);
+          await (selectedAlbum.value ?? _cachedAlbums[0]).getAssetListPaged(page: currentPageValue, size: currentPageValue <= 1 ? 30 : 60);
       List<FutureBuilder<Uint8List?>> temp = [];
 
       for (int i = 0; i < media.length; i++) {
@@ -202,6 +206,14 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     } else {
       setState(() => isGrantGalleryPermission = false);
     }
+  }
+
+  _changeAlbum(AssetPathEntity album) {
+    selectedAlbum.value = album;
+    _mediaList.value = [];
+    allImages.value = [];
+    currentPage.value = 0;
+    _fetchNewMedia(currentPageValue: 0);
   }
 
   _showLoadingSnackBar() {
@@ -489,17 +501,71 @@ class _ImagesViewPageState extends State<ImagesViewPage>
 
   Widget normalAppBar({bool isShowDone = true}) {
     double width = MediaQuery.of(context).size.width;
+    return ValueListenableBuilder(
+        valueListenable: selectedAlbum,
+        builder: (context, AssetPathEntity? selectedAlbumValue, child) {
+          return Container(
+            color: widget.whiteColor,
+            height: 56,
+            width: width,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                existButton(),
+                const Spacer(),
+                if (selectedAlbumValue != null) TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700
+                    )
+                  ),
+                  onPressed: () async {
+                    await showModalBottomSheet<void>(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      enableDrag: true,
+                      barrierColor: Colors.black.withOpacity(0.5),
+                      builder: (context) {
+                        return albumListBottomSheet();
+                      }
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Text(selectedAlbumValue.name),
+                      const SizedBox(width: 2,),
+                      Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 28,
+                        color: widget.appTheme.accentColor,
+                      )
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                if (isShowDone) doneButton(),
+              ],
+            ),
+          );
+        });
+  }
+
+  Widget albumListBottomSheet() {
     return Container(
-      color: widget.whiteColor,
-      height: 56,
-      width: width,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          existButton(),
-          const Spacer(),
-          if (isShowDone) doneButton(),
-        ],
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(10),
+          topRight: Radius.circular(10),
+        ),
+      ),
+      margin: EdgeInsets.only(top: 80),
+      child: Center(
+        child: Text('modal bottom sheet'),
       ),
     );
   }
