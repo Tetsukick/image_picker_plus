@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -94,6 +95,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
   bool noPaddingForGridView = false;
 
   List<AssetPathEntity> _cachedAlbums = [];
+  ValueNotifier<AssetPathEntity?> selectedAlbum = ValueNotifier(null);
   double scrollPixels = 0.0;
   bool isScrolling = false;
   bool noImages = false;
@@ -147,7 +149,6 @@ class _ImagesViewPageState extends State<ImagesViewPage>
         return;
       }
       isFetchLoading.value = true;
-      _showLoadingSnackBar();
     }  
     lastPage.value = currentPageValue;
 
@@ -160,17 +161,20 @@ class _ImagesViewPageState extends State<ImagesViewPage>
 
       if (_cachedAlbums.isEmpty) {
         _cachedAlbums =
-          await PhotoManager.getAssetPathList(onlyAll: true, type: type);
+          await PhotoManager.getAssetPathList(onlyAll: false, type: type);
         if (_cachedAlbums.isEmpty) {
           WidgetsBinding.instance
               .addPostFrameCallback((_) => setState(() => noImages = true));
           return;
-        } else if (noImages) {
-          noImages = false;
+        } else {
+          setState(() {
+            noImages = false;
+            selectedAlbum.value = _cachedAlbums[0];
+          });
         }
       }
       List<AssetEntity> media =
-          await _cachedAlbums[0].getAssetListPaged(page: currentPageValue, size: currentPageValue <= 1 ? 30 : 60);
+          await (selectedAlbum.value ?? _cachedAlbums[0]).getAssetListPaged(page: currentPageValue, size: currentPageValue <= 1 ? 30 : 60);
       List<FutureBuilder<Uint8List?>> temp = [];
 
       for (int i = 0; i < media.length; i++) {
@@ -190,9 +194,6 @@ class _ImagesViewPageState extends State<ImagesViewPage>
       currentPage.value++;
       isImagesReady.value = true;
       isFetchLoading.value = false;
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      }
       WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
     } else if (result == PermissionState.notDetermined) {
       result = await PhotoManager.requestPermissionExtend();
@@ -202,6 +203,23 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     } else {
       setState(() => isGrantGalleryPermission = false);
     }
+  }
+
+  _changeAlbum(AssetPathEntity album) async {
+    setState(() {
+      isImagesReady.value = false;
+    });
+    await Future.delayed(const Duration(milliseconds: 500));
+    setState(() {
+      dataIndex.value = 0;
+      selectedAlbum.value = album;
+      _mediaList.value = [];
+      mediaListByDate.value = {};
+      allImages.value = [];
+      currentPage.value = 0;
+      lastPage.value = 0;
+    });
+    _fetchNewMedia(currentPageValue: 0);
   }
 
   _showLoadingSnackBar() {
@@ -396,8 +414,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                     child) {
                   return ValueListenableBuilder(
                     valueListenable: lastPage,
-                    builder: (context, int lastPageValue, child) =>
-                        ValueListenableBuilder(
+                    builder: (context, int lastPageValue, child) => ValueListenableBuilder(
                       valueListenable: currentPage,
                       builder: (context, int currentPageValue, child) {
                         if (!widget.showImagePreview) {
@@ -489,17 +506,124 @@ class _ImagesViewPageState extends State<ImagesViewPage>
 
   Widget normalAppBar({bool isShowDone = true}) {
     double width = MediaQuery.of(context).size.width;
+    return ValueListenableBuilder(
+        valueListenable: selectedAlbum,
+        builder: (context, AssetPathEntity? selectedAlbumValue, child) {
+          return Container(
+            color: widget.whiteColor,
+            height: 56,
+            width: width,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                existButton(),
+                const Spacer(),
+                if (selectedAlbumValue != null) TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700
+                    )
+                  ),
+                  onPressed: () async {
+                    await showModalBottomSheet<void>(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      enableDrag: true,
+                      barrierColor: Colors.black.withOpacity(0.5),
+                      builder: (context) {
+                        return albumListBottomSheet();
+                      }
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Text(selectedAlbumValue.name),
+                      const SizedBox(width: 2,),
+                      Icon(
+                        Icons.keyboard_arrow_down,
+                        size: 28,
+                        color: widget.appTheme.accentColor,
+                      )
+                    ],
+                  ),
+                ),
+                const Spacer(),
+                if (isShowDone) doneButton(),
+              ],
+            ),
+          );
+        });
+  }
+
+  Widget albumListBottomSheet() {
     return Container(
-      color: widget.whiteColor,
-      height: 56,
-      width: width,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          existButton(),
-          const Spacer(),
-          if (isShowDone) doneButton(),
-        ],
+      height: 300,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(10),
+          topRight: Radius.circular(10),
+        ),
+      ),
+      margin: EdgeInsets.only(top: 80),
+      child: ListView.builder(
+        itemCount: _cachedAlbums.length,
+        itemBuilder: (context, index) {
+          final album = _cachedAlbums[index];
+          return SafeArea(
+            child: ListTile(
+              title: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    FutureBuilder(
+                      future: album.getAssetListPaged(page: 0, size: 1),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData && snapshot.data != null
+                            && snapshot.data!.isNotEmpty && snapshot.data!.first.type == AssetType.image) {
+                          return FutureBuilder(future: snapshot.data!.first.file,
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData && snapshot.data != null) {
+                                  return Image.file(
+                                    snapshot.data!,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                  );
+                                } else {
+                                  return Container(width: 50, height: 50, color: Colors.grey,);
+                                }
+                              });
+                        } else {
+                          return Container(width: 50, height: 50, color: Colors.grey,);
+                        }
+                      }),
+                    const SizedBox(width: 8,),
+                    FutureBuilder(future: album.assetCountAsync, builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Text('${album.name} (${snapshot.data})');
+                      } else {
+                        return const SizedBox();
+                      }
+                    }),
+                    const Spacer(),
+                    if (selectedAlbum.value == album) Icon(
+                      Icons.check,
+                      color: widget.appTheme.accentColor,
+                    ),
+                  ],
+                ),
+              ),
+              onTap: () {
+                _changeAlbum(album);
+                Navigator.pop(context);
+              },
+            ),
+          );
+        }
       ),
     );
   }
@@ -723,21 +847,30 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     return ValueListenableBuilder(
         valueListenable: allImages,
         builder: (context, List<AssetEntity?> allImagesValue, child) {
-          final allImagesInDate =
-              mediaList.map((e) => (allImages.value[e.$1], e.$1)).toList();
+          if (allImagesValue.length < mediaList.length) {
+            return const SizedBox();
+          }
+          var allImagesInDate;
+          try {
+            allImagesInDate =
+              mediaList.map((e) => (allImagesValue[e.$1], e.$1)).toList();
+          } catch (e) {
+            log(e.toString());
+            return const SizedBox();
+          }
           onTapDateHeader({
-            required List<(AssetEntity?, int)> allImagesInDate,
-            required List<AssetEntity> selectedImagesValue,
-            required bool forceRemove,
-            required bool forceAdd,
-          }) {
-            for (var image in allImagesInDate) {
-              if (image.$1 != null) {
-                selectionImageCheck(image.$1!, selectedImagesValue, image.$2,
+              required List<(AssetEntity?, int)> allImagesInDate,
+              required List<AssetEntity> selectedImagesValue,
+              required bool forceRemove,
+              required bool forceAdd,
+            }) {
+              for (var image in allImagesInDate) {
+                if (image.$1 != null) {
+                  selectionImageCheck(image.$1!, selectedImagesValue, image.$2,
                     forceRemove: forceRemove, forceAdd: forceAdd);
+                }
               }
             }
-          }
 
           return ValueListenableBuilder(
               valueListenable: isImagesReady,
@@ -803,42 +936,50 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           valueListenable: allImages,
           builder: (context, List<AssetEntity?> allImagesValue, child) {
             return ValueListenableBuilder(
-              valueListenable: widget.multiSelectedImages,
-              builder: (context, List<AssetEntity> selectedImagesValue, child) {
-                FutureBuilder<Uint8List?> mediaList = _mediaList.value[index];
-                AssetEntity? image = allImagesValue[index];
-                if (image != null) {
-                  bool imageSelected = selectedImagesValue.contains(image);
-                  List<AssetEntity> multiImages = selectedImagesValue;
-                  return Stack(
-                    children: [
-                      ChildGridViewImage(
-                        image: image,
-                        index: index,
-                        childWidget: mediaList,
-                        onTap: onTapImage,
-                        multiSelectedImages: widget.multiSelectedImages,
-                        multiSelectionMode: widget.multiSelectionMode,
-                        appTheme: widget.appTheme,
-                      ),
-                      if (selectedImageValue == image)
-                        IgnorePointer(ignoring: true, child: blurContainer()),
-                      IgnorePointer(
-                        ignoring: true,
-                        child: MultiSelectionMode(
-                          image: image,
-                          multiSelectionMode: widget.multiSelectionMode,
-                          imageSelected: imageSelected,
-                          multiSelectedImage: multiImages,
-                          appTheme: widget.appTheme,
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  return Container();
-                }
-              },
+              valueListenable: _mediaList,
+              builder: (context, List<FutureBuilder<Uint8List?>> mediaListValue, child) {
+                return ValueListenableBuilder(
+                  valueListenable: widget.multiSelectedImages,
+                  builder: (context, List<AssetEntity> selectedImagesValue, child) {
+                    if (mediaListValue.length < index + 1) {
+                      return const SizedBox();
+                    }
+                    FutureBuilder<Uint8List?> mediaList = mediaListValue[index];
+                    AssetEntity? image = allImagesValue[index];
+                    if (image != null) {
+                      bool imageSelected = selectedImagesValue.contains(image);
+                      List<AssetEntity> multiImages = selectedImagesValue;
+                      return Stack(
+                        children: [
+                          ChildGridViewImage(
+                            image: image,
+                            index: index,
+                            childWidget: mediaList,
+                            onTap: onTapImage,
+                            multiSelectedImages: widget.multiSelectedImages,
+                            multiSelectionMode: widget.multiSelectionMode,
+                            appTheme: widget.appTheme,
+                          ),
+                          if (selectedImageValue == image)
+                            IgnorePointer(ignoring: true, child: blurContainer()),
+                          IgnorePointer(
+                            ignoring: true,
+                            child: MultiSelectionMode(
+                              image: image,
+                              multiSelectionMode: widget.multiSelectionMode,
+                              imageSelected: imageSelected,
+                              multiSelectedImage: multiImages,
+                              appTheme: widget.appTheme,
+                            ),
+                          ),
+                        ],
+                      );
+                    } else {
+                      return const SizedBox();
+                    }
+                  },
+                );
+              }
             );
           },
         );
