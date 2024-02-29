@@ -153,7 +153,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     lastPage.value = currentPageValue;
 
     PermissionState result = await PhotoManager.requestPermissionExtend();
-    if (result.isAuth) {
+    if (result == PermissionState.authorized || result == PermissionState.limited) {
       setState(() => isGrantGalleryPermission = true);
       RequestType type = widget.showInternalVideos && widget.showInternalImages
           ? RequestType.common
