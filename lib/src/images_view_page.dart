@@ -182,7 +182,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
             await getImageGallery(media, i);
         DateTime exifDate = media[i].createDateTime;
         mediaListByDate.value.update(
-          exifDate.toYyyyMMdd,
+          exifDate.toYyyyMMdd(widget.appTheme.locale),
           (value) => [...value, (dataIndex.value, gridViewImage)],
           ifAbsent: () => [(dataIndex.value, gridViewImage)],
         );
@@ -889,7 +889,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                           children: [
                             Padding(
                               padding: const EdgeInsets.only(left: 16),
-                              child: Text(DateTime.parse(date).toMMMdy),
+                              child: Text(DateTime.parse(date).toMMMdy(widget.appTheme.locale)),
                             ),
                             InkWell(
                               onTap: () => onTapDateHeader(
