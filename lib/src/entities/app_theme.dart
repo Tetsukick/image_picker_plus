@@ -7,6 +7,7 @@ class AppTheme {
   final Color accentColor;
   final Color shimmerBaseColor;
   final Color shimmerHighlightColor;
+  final String? locale;
 
   AppTheme({
     this.primaryColor = Colors.white,
@@ -15,5 +16,6 @@ class AppTheme {
     this.accentColor = Colors.blue,
     this.shimmerBaseColor = const Color.fromARGB(255, 185, 185, 185),
     this.shimmerHighlightColor = const Color.fromARGB(255, 209, 209, 209),
+    this.locale
   });
 }

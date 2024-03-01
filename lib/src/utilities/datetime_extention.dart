@@ -2,11 +2,11 @@ import 'package:intl/intl.dart';
 
 extension DateTimeExtension on DateTime {
 
-  String get toMMMdy {
-    return DateFormat('MMM d, y').format(this);
+  String toMMMdy(String? locale) {
+    return DateFormat('MMM d, y', locale).format(this);
   }
 
-  String get toYyyyMMdd {
-    return DateFormat('yyyy-MM-dd').format(this);
+  String toYyyyMMdd(String? locale) {
+    return DateFormat('yyyy-MM-dd', locale).format(this);
   }
 }
