@@ -301,13 +301,13 @@ class _ImagesViewPageState extends State<ImagesViewPage>
               return Stack(
                 children: [
                   buildGridView(),
-                  Positioned(
-                    right: 24,
-                    bottom: 24,
-                    child: Visibility(
-                      visible: selectedImagesValue.isNotEmpty,
-                      child: clearSelectedImages()),
-                  ),
+                  // Positioned(
+                  //   right: 24,
+                  //   bottom: 24,
+                  //   child: Visibility(
+                  //     visible: selectedImagesValue.isNotEmpty,
+                  //     child: clearSelectedImages()),
+                  // ),
                 ],
               );
           })
@@ -428,7 +428,8 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                                         currentPageValue, lastPageValue)
                                     : normalGridView(mediaListValue,
                                         currentPageValue, lastPageValue),
-                              )
+                              ),
+                              uploadButton(),
                             ],
                           );
                         } else {
@@ -446,6 +447,45 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           return loadingWidget();
         }
       },
+    );
+  }
+
+  Widget uploadButton() {
+    return Container(
+      height: 56,
+      clipBehavior: Clip.antiAlias,
+      decoration: const BoxDecoration(color: Colors.transparent),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: widget.appTheme.accentColor,
+              disabledBackgroundColor: Colors.grey,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: widget.multiSelectedImages.value.isEmpty ? null : () {
+              done();
+            },
+            child: Text(widget.tabsTexts.done,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontFamily: 'Dosis',
+                fontWeight: FontWeight.w700,
+                height: 0,
+                letterSpacing: 1.60,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -504,7 +544,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
     );
   }
 
-  Widget normalAppBar({bool isShowDone = true}) {
+  Widget normalAppBar({bool isShowDone = false}) {
     double width = MediaQuery.of(context).size.width;
     return ValueListenableBuilder(
         valueListenable: selectedAlbum,
@@ -551,7 +591,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
                   ),
                 ),
                 const Spacer(),
-                if (isShowDone) doneButton(),
+                isShowDone ? doneButton() : const SizedBox(width: 30,),
               ],
             ),
           );
@@ -568,7 +608,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           topRight: Radius.circular(10),
         ),
       ),
-      margin: EdgeInsets.only(top: 80),
+      margin: const EdgeInsets.only(top: 80),
       child: ListView.builder(
         itemCount: _cachedAlbums.length,
         itemBuilder: (context, index) {
@@ -854,7 +894,7 @@ class _ImagesViewPageState extends State<ImagesViewPage>
           if (allImagesValue.length < mediaList.length) {
             return const SizedBox();
           }
-          var allImagesInDate;
+          List<(AssetEntity?, int)> allImagesInDate;
           try {
             allImagesInDate =
               mediaList.map((e) => (allImagesValue[e.$1], e.$1)).toList();

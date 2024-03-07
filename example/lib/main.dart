@@ -80,6 +80,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 accentColor: Colors.orangeAccent,
                 backgroundColor: Colors.white70,
               ),
+              tabsTexts: TabsTexts(
+                done: 'Share with Family'
+              )
             ),
           source: ImageSource.both,
           multiSelection: true,

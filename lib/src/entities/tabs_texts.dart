@@ -15,6 +15,7 @@ class TabsTexts {
   final String? requestPhotoAccessPermission;
   final String? requestPhotoAccessPermissionDescription;
   final String changeSetting;
+  final String done;
 
   TabsTexts({
     this.videoText = "VIDEO",
@@ -31,5 +32,6 @@ class TabsTexts {
     this.requestPhotoAccessPermission,
     this.requestPhotoAccessPermissionDescription,
     this.changeSetting = 'CHANGE SETTINGS',
+    this.done = 'Done'
   });
 }
