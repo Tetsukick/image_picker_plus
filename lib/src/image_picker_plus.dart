@@ -11,10 +11,12 @@ class ImagePickerPlus {
     required ImageSource source,
     GalleryDisplaySettings? galleryDisplaySettings,
     bool multiImages = false,
+    bool byDate = false,
   }) async {
     return _pushToCustomPicker(
       galleryDisplaySettings: galleryDisplaySettings,
       multiSelection: multiImages,
+      byDate: byDate,
       pickerSource: PickerSource.image,
       source: source,
     );
@@ -24,10 +26,12 @@ class ImagePickerPlus {
     required ImageSource source,
     GalleryDisplaySettings? galleryDisplaySettings,
     bool multiVideos = false,
+    bool byDate = false,
   }) async {
     return _pushToCustomPicker(
       galleryDisplaySettings: galleryDisplaySettings,
       multiSelection: multiVideos,
+      byDate: byDate,
       pickerSource: PickerSource.video,
       source: source,
     );
